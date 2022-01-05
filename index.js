@@ -14,7 +14,8 @@ server.use(
 
 server.use("/feeds", router);
 
-server.listen(process.env.NODE_ENV || APP_PORT_NO, () => {
+const port = process.env.PORT || APP_PORT_NO;
+server.listen(port, () => {
   console.log(
     `Server beating 💓 on PORT ${process.env.NODE_ENV || APP_PORT_NO} in ${
       process.env.NODE_ENV
