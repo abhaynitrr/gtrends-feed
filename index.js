@@ -1,6 +1,6 @@
 import express from "express";
 import compression from "compression";
-import router from './controllers/router';
+import router from "./controllers/router";
 import compressBasedOnRequestHeaders from "./controllers/compressor";
 import { APP_PORT_NO } from "./helpers/feed-constants";
 
@@ -12,8 +12,12 @@ server.use(
   })
 );
 
-server.use('/feeds', router);
+server.use("/feeds", router);
 
-server.listen(APP_PORT_NO, () => {
-  console.log(`Server beating 💓 on PORT ${APP_PORT_NO} in ${process.env.NODE_ENV} environment`);
+server.listen(process.env.NODE_ENV || APP_PORT_NO, () => {
+  console.log(
+    `Server beating 💓 on PORT ${process.env.NODE_ENV || APP_PORT_NO} in ${
+      process.env.NODE_ENV
+    } environment`
+  );
 });

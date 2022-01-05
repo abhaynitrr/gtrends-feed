@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "init": "babel-node --inspect index.js",
-    "dev": "cross-env NODE_ENV=development nodemon --exec npm run init"
+    "dev": "cross-env NODE_ENV=development nodemon --exec npm run init",
+    "start": "cross-env NODE_ENV=production nodemon --exec npm run init"
   },
   "author": "",
   "license": "ISC",
