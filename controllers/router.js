@@ -8,6 +8,7 @@ import {
   FROM_DATE_IN_MILISECONDS
 } from "../helpers/feed-constants";
 import feedutils from "../helpers/feed-utility";
+import Timeline from "../models/timeline";
 
 class Router {
   static getRoutes() {
@@ -27,7 +28,11 @@ class Router {
       FEED_ROUTES_CONFIG.SUPPORTED_PATHS,
       async (request, response) => {
         const { type } = request.params;
-        const { q = "", geo = "IN" } = request.query;
+        const {
+          q = "",
+          geo = "IN",
+          from = FROM_DATE_IN_MILISECONDS
+        } = request.query;
         //   console.log("Request >", request);
         switch (type) {
           case FEED_ACTION_CONSTANTS.GET_INTEREST_OVERTIME:
@@ -37,16 +42,38 @@ class Router {
                */
               let trendsOverTime = await interestOverTime({
                 keyword: q,
-                startTime: new Date(Date.now() - FROM_DATE_IN_MILISECONDS),
+                startTime: new Date(Date.now() - parseInt(from)),
                 endTime: new Date(),
                 granularTimeResolution: true,
                 geo
               });
               // Await promise response
               let promRes = await trendsOverTime;
+              if (!promRes) {
+                return response.send(jsonRes);
+              }
+              promRes = JSON.parse(promRes);
+              let jsonRes = {};
+              let queryObj = {
+                displayKey: q,
+                key: q,
+                topic: "news"
+              };
+              const timelineData = [];
+              if (
+                promRes &&
+                promRes.default &&
+                Array.isArray(promRes.default.timelineData)
+              ) {
+                promRes.default.timelineData.forEach(element => {
+                  timelineData.push(new Timeline(element, queryObj));
+                });
+                jsonRes.timelineData = timelineData;
+              }
               response.status(SUCCESS_STATUS);
               response.type(JSON_RESPONSE_TYPE);
-              response.send(promRes);
+              response.set("Cache-Control", "public, max-age=86400");
+              response.send(jsonRes);
             } catch (error) {
               feedutils.sendErrorResponse(response, error.message);
             }
