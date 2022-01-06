@@ -4,9 +4,12 @@
   "description": "Generates feed from Google trends Api",
   "main": "index.js",
   "scripts": {
+    "clean": "rm -rf build && mkdir build",
+    "webpack-build": "npm run clean && cross-env NODE_ENV=production webpack -p --progress --profile --colors",
+    "build": "npm run clean && npm run webpack-build",
+    "start": "npm run build && node ./build/gtrendsfeed.min.js",
     "init": "babel-node --inspect index.js",
-    "dev": "cross-env NODE_ENV=development nodemon --exec npm run init",
-    "start": "cross-env NODE_ENV=production nodemon --exec npm run init"
+    "dev": "cross-env NODE_ENV=development nodemon --exec npm run init"
   },
   "author": "",
   "license": "ISC",
@@ -46,7 +49,6 @@
     "@typescript-eslint/parser": "^4.6.0",
     "babel-eslint": "^10.1.0",
     "babel-loader": "^8.0.0",
-    "copy-webpack-plugin": "^4.5.2",
     "eslint": "^7.12.1",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.1",
