@@ -7,7 +7,7 @@
     "clean": "rm -rf build && mkdir build",
     "webpack-build": "npm run clean && cross-env NODE_ENV=production webpack -p --progress --profile --colors",
     "build": "npm run clean && npm run webpack-build",
-    "start": "npm run build && node ./build/gtrendsfeed.min.js",
+    "start": "node ./build/gtrendsfeed.min.js",
     "init": "babel-node --inspect index.js",
     "dev": "cross-env NODE_ENV=development nodemon --exec npm run init"
   },
