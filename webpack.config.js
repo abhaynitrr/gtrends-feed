@@ -6,6 +6,9 @@ const path = require("path");
  * "target": "node" has been added because fs and other built in node-modules were giving issues.
  * @type {{}}
  */
+
+const CopyWebpackPlugin = require("copy-webpack-plugin");
+
 module.exports = {
   target: "node",
   entry: "./index.js",
@@ -26,5 +29,13 @@ module.exports = {
         }
       }
     ]
-  }
+  },
+  plugins: [
+    new CopyWebpackPlugin([
+      {
+        from: path.resolve(__dirname, "data/*"),
+        to: path.resolve(__dirname, "build")
+      }
+    ])
+  ]
 };

@@ -1,5 +1,7 @@
-import express from "express";
+import express, { request, response } from "express";
 import { interestOverTime } from "google-trends-api";
+import fs from "fs";
+import readXlsxFile from "read-excel-file/node";
 import {
   FEED_ROUTES_CONFIG,
   FEED_ACTION_CONSTANTS,
@@ -9,6 +11,8 @@ import {
 } from "../helpers/feed-constants";
 import feedutils from "../helpers/feed-utility";
 import Timeline from "../models/timeline";
+// const fs = require("fs");
+// const readXlsxFile = require("read-excel-file/node");
 
 class Router {
   static getRoutes() {
@@ -83,6 +87,53 @@ class Router {
             feedutils.sendNotFoundResponse(response);
             break;
         }
+      }
+    );
+
+    router.get(
+      FEED_ROUTES_CONFIG.GET_COMPARISON_FEED_PATH,
+      (request, response) => {
+        const { dt = 0, val = 3, key = 1, dkey = 2 } = request.query;
+        readXlsxFile(fs.createReadStream("./build/data/trends.xlsx"), {
+          dateFormat: "yyyy-mm-dd"
+        })
+          .then(rows => {
+            // console.log(rows);
+            try {
+              const timelineData = [];
+              const jsonRes = {};
+              if (Array.isArray(rows) && rows.length > 0) {
+                rows.forEach(element => {
+                  try {
+                    const timelineobj = {
+                      time: element[dt],
+                      formattedTime: element[dt],
+                      formattedAxisTime: element[dt],
+                      value: element[val],
+                      hasData: element[val],
+                      formattedValue: element[val]
+                    };
+                    const queryObj = {
+                      displayKey: element[dkey],
+                      key: element[key],
+                      topic: "news"
+                    };
+                    timelineData.push(new Timeline(timelineobj, queryObj));
+                  } catch (error) {
+                    // console.log(error)
+                  }
+                });
+                jsonRes.timelineData = timelineData;
+              }
+              response.status(SUCCESS_STATUS);
+              response.type(JSON_RESPONSE_TYPE);
+              response.set("Cache-Control", "public, max-age=86400");
+              response.send(jsonRes);
+            } catch (error) {
+              feedutils.sendErrorResponse(response, error.message);
+            }
+          })
+          .catch(error => feedutils.sendErrorResponse(response, error.message));
       }
     );
 

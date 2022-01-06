@@ -5,6 +5,7 @@ export const FROM_DATE_IN_MILISECONDS = 6 * 30 * 24 * 60 * 60 * 1000;
 
 export const FEED_ROUTES_CONFIG = {
   SUPPORTED_PATHS: ["/trends", "/trends/:type"],
+  GET_COMPARISON_FEED_PATH: ["/getcomparisondata"],
   UN_SUPPORTED_PATHS: ["/feeds/:type/*"],
   HEALTH_CHECK_PATH: ["/healthCheck"],
   HEALTH_CHECK_MSG: "Health Check Ok"
