@@ -7,7 +7,12 @@ import { APP_PORT_NO } from "./helpers/feed-constants";
 
 const server = express();
 
-server.use(cors());
+server.use(
+  cors({
+    origin: "*",
+    optionsSuccessStatus: 200
+  })
+);
 server.use(
   compression({
     filter: compressBasedOnRequestHeaders
