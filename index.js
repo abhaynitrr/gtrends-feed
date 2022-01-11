@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import compression from "compression";
 import router from "./controllers/router";
 import compressBasedOnRequestHeaders from "./controllers/compressor";
@@ -6,6 +7,7 @@ import { APP_PORT_NO } from "./helpers/feed-constants";
 
 const server = express();
 
+server.use(cors());
 server.use(
   compression({
     filter: compressBasedOnRequestHeaders
