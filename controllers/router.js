@@ -11,6 +11,7 @@ import {
 } from "../helpers/feed-constants";
 import feedutils from "../helpers/feed-utility";
 import Timeline from "../models/timeline";
+import TimelineV2 from "../models/timelineV2";
 // const fs = require("fs");
 // const readXlsxFile = require("read-excel-file/node");
 
@@ -105,49 +106,23 @@ class Router {
               if (Array.isArray(ROWS) && ROWS.length > 0) {
                 const headers = ROWS[0];
                 for (let row = 1; row < ROWS.length; row++) {
-                  for (let col = 1; col < headers.length; col++) {
-                    try {
-                      const tlObj = {};
-                      tlObj.time = ROWS[row][0];
-                      tlObj.formattedTime = ROWS[row][0];
-                      tlObj.formattedAxisTime = ROWS[row][0];
-                      tlObj.value = ROWS[row][col];
-                      tlObj.hasData = ROWS[row][col];
-                      tlObj.formattedValue = ROWS[row][col];
-                      const queryObj = {
-                        displayKey: headers[col],
-                        key: col,
-                        topic: "news"
-                      };
-                      timelineData.push(new Timeline(tlObj, queryObj));
-                    } catch (error) {
-                      // console.log(error)
-                    }
+                  // for (let col = 1; col < headers.length; col++) {
+                  try {
+                    const tlObj = {};
+                    tlObj.time = ROWS[row][0];
+                    tlObj.keys = headers;
+                    tlObj.values = ROWS[row];
+
+                    timelineData.push(new TimelineV2(tlObj));
+                  } catch (error) {
+                    // console.log(error)
                   }
+                  // }
                 }
-                // ROWS.forEach(element => {
-                //   try {
-                //     const timelineobj = {
-                //       time: element[dt],
-                //       formattedTime: element[dt],
-                //       formattedAxisTime: element[dt],
-                //       value: element[val],
-                //       hasData: element[val],
-                //       formattedValue: element[val]
-                //     };
-                //     const queryObj = {
-                //       displayKey: element[dkey],
-                //       key: element[key],
-                //       topic: "news"
-                //     };
-                //     timelineData.push(new Timeline(timelineobj, queryObj));
-                //   } catch (error) {
-                //     // console.log(error)
-                //   }
-                // });
-                jsonRes.timelineData = timelineData.sort(
-                  (a, b) => a.key - b.key
-                );
+                jsonRes.timelineData = timelineData;
+                // jsonRes.timelineData = timelineData.sort(
+                //   (a, b) => a.key - b.key
+                // );
               }
               response.status(SUCCESS_STATUS);
               response.type(JSON_RESPONSE_TYPE);
