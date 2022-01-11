@@ -97,33 +97,57 @@ class Router {
         readXlsxFile(fs.createReadStream("./build/data/trends.xlsx"), {
           dateFormat: "yyyy-mm-dd"
         })
-          .then(rows => {
-            // console.log(rows);
+          .then(ROWS => {
+            // console.log(ROWS);
             try {
               const timelineData = [];
               const jsonRes = {};
-              if (Array.isArray(rows) && rows.length > 0) {
-                rows.forEach(element => {
-                  try {
-                    const timelineobj = {
-                      time: element[dt],
-                      formattedTime: element[dt],
-                      formattedAxisTime: element[dt],
-                      value: element[val],
-                      hasData: element[val],
-                      formattedValue: element[val]
-                    };
-                    const queryObj = {
-                      displayKey: element[dkey],
-                      key: element[key],
-                      topic: "news"
-                    };
-                    timelineData.push(new Timeline(timelineobj, queryObj));
-                  } catch (error) {
-                    // console.log(error)
+              if (Array.isArray(ROWS) && ROWS.length > 0) {
+                const headers = ROWS[0];
+                for (let row = 1; row < ROWS.length; row++) {
+                  for (let col = 1; col < headers.length; col++) {
+                    try {
+                      const tlObj = {};
+                      tlObj.time = ROWS[row][0];
+                      tlObj.formattedTime = ROWS[row][0];
+                      tlObj.formattedAxisTime = ROWS[row][0];
+                      tlObj.value = ROWS[row][col];
+                      tlObj.hasData = ROWS[row][col];
+                      tlObj.formattedValue = ROWS[row][col];
+                      const queryObj = {
+                        displayKey: headers[col],
+                        key: col,
+                        topic: "news"
+                      };
+                      timelineData.push(new Timeline(tlObj, queryObj));
+                    } catch (error) {
+                      // console.log(error)
+                    }
                   }
-                });
-                jsonRes.timelineData = timelineData;
+                }
+                // ROWS.forEach(element => {
+                //   try {
+                //     const timelineobj = {
+                //       time: element[dt],
+                //       formattedTime: element[dt],
+                //       formattedAxisTime: element[dt],
+                //       value: element[val],
+                //       hasData: element[val],
+                //       formattedValue: element[val]
+                //     };
+                //     const queryObj = {
+                //       displayKey: element[dkey],
+                //       key: element[key],
+                //       topic: "news"
+                //     };
+                //     timelineData.push(new Timeline(timelineobj, queryObj));
+                //   } catch (error) {
+                //     // console.log(error)
+                //   }
+                // });
+                jsonRes.timelineData = timelineData.sort(
+                  (a, b) => a.key - b.key
+                );
               }
               response.status(SUCCESS_STATUS);
               response.type(JSON_RESPONSE_TYPE);
