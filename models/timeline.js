@@ -41,7 +41,11 @@ class Timeline {
       return parseInt(value);
     } else if (typeof value === "number") {
       return value;
-    } else isInteger(value) || 0;
+    } else if (isInteger(value)) {
+      return value;
+    } else {
+      return 0;
+    }
   }
 }
 
