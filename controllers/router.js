@@ -96,41 +96,73 @@ class Router {
       (request, response) => {
         const { dt = 0, val = 3, key = 1, dkey = 2 } = request.query;
         readXlsxFile(fs.createReadStream("./build/data/trends.xlsx"), {
-          dateFormat: "yyyy-mm-dd"
+          sheet: 2
         })
-          .then(ROWS => {
-            // console.log(ROWS);
-            try {
-              const timelineData = [];
-              const jsonRes = {};
-              if (Array.isArray(ROWS) && ROWS.length > 0) {
-                const headers = ROWS[0];
-                for (let row = 1; row < ROWS.length; row++) {
-                  // for (let col = 1; col < headers.length; col++) {
-                  try {
-                    const tlObj = {};
-                    tlObj.time = ROWS[row][0];
-                    tlObj.keys = headers;
-                    tlObj.values = ROWS[row];
+          .then(MAPPING => {
+            const CAT_MAP = MAPPING.reduce((map = {}, item) => {
+              map[item[0]] = item[1];
+              return map;
+            }, {});
+            readXlsxFile(fs.createReadStream("./build/data/trends.xlsx"), {
+              dateFormat: "yyyy-mm-dd"
+            })
+              .then(ROWS => {
+                // console.log(ROWS);
+                try {
+                  const bucketWiseData = {};
+                  const timelineData = [];
+                  const jsonRes = {};
+                  if (Array.isArray(ROWS) && ROWS.length > 0) {
+                    const headers = ROWS[0];
+                    for (let row = 1; row < ROWS.length; row++) {
+                      // for (let col = 1; col < headers.length; col++) {
+                      try {
+                        const tlObj = {};
+                        tlObj.time = ROWS[row][0];
+                        tlObj.keys = headers;
+                        tlObj.values = ROWS[row];
 
-                    timelineData.push(new TimelineV2(tlObj));
-                  } catch (error) {
-                    // console.log(error)
+                        let timelnObj = new TimelineV2(tlObj, CAT_MAP);
+                        for (const key in timelnObj) {
+                          if (Object.hasOwnProperty.call(timelnObj, key)) {
+                            if (
+                              !Object.hasOwnProperty.call(bucketWiseData, key)
+                            ) {
+                              bucketWiseData[key] = [];
+                            }
+                            bucketWiseData[key].push(timelnObj[key]);
+                          }
+                        }
+                        // timelineData.push(new TimelineV2(tlObj, CAT_MAP));
+                      } catch (error) {
+                        // console.log(error)
+                      }
+                      // }
+                    }
+                    for (const key in bucketWiseData) {
+                      if (Object.hasOwnProperty.call(bucketWiseData, key)) {
+                        const finalObj = {};
+                        finalObj.category = key;
+                        finalObj.data = bucketWiseData[key];
+                        timelineData.push(finalObj);
+                      }
+                    }
+                    jsonRes.timelineData = timelineData;
+                    // jsonRes.timelineData = timelineData.sort(
+                    //   (a, b) => a.key - b.key
+                    // );
                   }
-                  // }
+                  response.status(SUCCESS_STATUS);
+                  response.type(JSON_RESPONSE_TYPE);
+                  response.set("Cache-Control", "public, max-age=86400");
+                  response.send(jsonRes);
+                } catch (error) {
+                  feedutils.sendErrorResponse(response, error.message);
                 }
-                jsonRes.timelineData = timelineData;
-                // jsonRes.timelineData = timelineData.sort(
-                //   (a, b) => a.key - b.key
-                // );
-              }
-              response.status(SUCCESS_STATUS);
-              response.type(JSON_RESPONSE_TYPE);
-              response.set("Cache-Control", "public, max-age=86400");
-              response.send(jsonRes);
-            } catch (error) {
-              feedutils.sendErrorResponse(response, error.message);
-            }
+              })
+              .catch(error =>
+                feedutils.sendErrorResponse(response, error.message)
+              );
           })
           .catch(error => feedutils.sendErrorResponse(response, error.message));
       }

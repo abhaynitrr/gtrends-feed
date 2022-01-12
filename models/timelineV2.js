@@ -1,10 +1,15 @@
 import { isInteger } from "lodash";
 
 class TimelineV2 {
-  constructor({ time, keys, values }) {
-    this.time = this.getFormattedTime(time);
+  constructor({ time, keys, values }, CAT_MAP) {
+    // this.time = this.getFormattedTime(time);
+    const bucketWiseData = {};
     for (let k = 1; k < keys.length; k++) {
-      this[keys[k]] = this.getValue(values[k]);
+      if(!this[CAT_MAP[keys[k]]]) {
+        this[CAT_MAP[keys[k]]] = {};
+        this[CAT_MAP[keys[k]]]['time'] = this.getFormattedTime(time);
+      }
+      this[CAT_MAP[keys[k]]][keys[k]] = this.getValue(values[k]);
     }
   }
 
