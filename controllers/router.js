@@ -12,8 +12,6 @@ import {
 import feedutils from "../helpers/feed-utility";
 import Timeline from "../models/timeline";
 import TimelineV2 from "../models/timelineV2";
-// const fs = require("fs");
-// const readXlsxFile = require("read-excel-file/node");
 
 class Router {
   static getRoutes() {
@@ -28,6 +26,7 @@ class Router {
 
     /**
      * Handling for multiple routes like, getInterestOvertime etc
+     * 1. FEED_ROUTES_CONFIG.SUPPORTED_PATHS - google-trends-api supported
      */
     router.get(
       FEED_ROUTES_CONFIG.SUPPORTED_PATHS,
@@ -38,7 +37,6 @@ class Router {
           geo = "IN",
           from = FROM_DATE_IN_MILISECONDS
         } = request.query;
-        //   console.log("Request >", request);
         switch (type) {
           case FEED_ACTION_CONSTANTS.GET_INTEREST_OVERTIME:
             try {
@@ -91,31 +89,40 @@ class Router {
       }
     );
 
+    /**
+     * 2. FEED_ROUTES_CONFIG.GET_COMPARISON_FEED_PATH - pytrends datafile supported
+     *    pytrends fetches the data based on provided keywords,
+     *    then it uploads the data to a separate file which then node api consumes this datafile to plot json.
+     */
     router.get(
       FEED_ROUTES_CONFIG.GET_COMPARISON_FEED_PATH,
       (request, response) => {
-        const { dt = 0, val = 3, key = 1, dkey = 2 } = request.query;
-        readXlsxFile(fs.createReadStream("./build/data/trends.xlsx"), {
-          sheet: 2
+        const { type = "weekly" } = request.query;
+        let dataSheet = 1;
+        let mapSheet = 2;
+        if (type === "daily") {
+          dataSheet = 3;
+          mapSheet = 4;
+        }
+        readXlsxFile(fs.createReadStream("./build/data/gtrends-data.xlsx"), {
+          sheet: mapSheet
         })
           .then(MAPPING => {
             const CAT_MAP = MAPPING.reduce((map = {}, item) => {
               map[item[0]] = item[1];
               return map;
             }, {});
-            readXlsxFile(fs.createReadStream("./build/data/trends.xlsx"), {
+            readXlsxFile(fs.createReadStream("./build/data/gtrends-data.xlsx"), {
+              sheet: dataSheet,
               dateFormat: "yyyy-mm-dd"
             })
               .then(ROWS => {
-                // console.log(ROWS);
                 try {
                   const bucketWiseData = {};
-                  const timelineData = [];
                   const jsonRes = {};
                   if (Array.isArray(ROWS) && ROWS.length > 0) {
                     const headers = ROWS[0];
                     for (let row = 1; row < ROWS.length; row++) {
-                      // for (let col = 1; col < headers.length; col++) {
                       try {
                         const tlObj = {};
                         tlObj.time = ROWS[row][0];
@@ -133,24 +140,29 @@ class Router {
                             bucketWiseData[key].push(timelnObj[key]);
                           }
                         }
-                        // timelineData.push(new TimelineV2(tlObj, CAT_MAP));
                       } catch (error) {
                         // console.log(error)
                       }
-                      // }
                     }
-                    for (const key in bucketWiseData) {
-                      if (Object.hasOwnProperty.call(bucketWiseData, key)) {
-                        const finalObj = {};
-                        finalObj.category = key;
-                        finalObj.data = bucketWiseData[key];
-                        timelineData.push(finalObj);
-                      }
-                    }
-                    jsonRes.timelineData = timelineData;
-                    // jsonRes.timelineData = timelineData.sort(
-                    //   (a, b) => a.key - b.key
-                    // );
+                    /**
+                     * bucketWiseData : 
+                     * {
+                     *    timelineData : {
+                     *        cateforyA : [
+                     *                      {
+                     *                        "time" : 'Jan 01 2021',
+                     *                        "Cyclone Tauktae": 0.1,
+                                              "Tamil Thalaivas": 0.1,
+                                              "Vaishno Devi stampede": 0.1,
+                                              ...
+                     *                      },
+                     *                      ...timeline data],
+                     *        cateforyB : [...timeline data],
+                     *        ...
+                     *    }
+                     * }
+                     */
+                    jsonRes.timelineData = bucketWiseData;
                   }
                   response.status(SUCCESS_STATUS);
                   response.type(JSON_RESPONSE_TYPE);
