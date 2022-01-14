@@ -16,6 +16,11 @@ module.exports = {
     path: path.resolve(__dirname, "build"),
     filename: "gtrendsfeed.min.js"
   },
+  resolve: {
+    alias: {
+      "pg-native": path.join(__dirname, "aliases/pg-native.js")
+    }
+  },
   module: {
     rules: [
       {
@@ -36,6 +41,7 @@ module.exports = {
         from: path.resolve(__dirname, "data/*"),
         to: path.resolve(__dirname, "build")
       }
-    ])
+    ]),
+    new webpack.IgnorePlugin(/^pg-native$/)
   ]
 };
