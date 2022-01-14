@@ -20,5 +20,14 @@ export default {
         error: `${ERROR_CONSTANTS.ROUTE_NOT_FOUND}`
       })
     );
+  },
+  getFormattedTime: time => {
+    if (typeof time === "object" && time instanceof Date) {
+      return time.toDateString().slice(4);
+    } else if (typeof time === "string") {
+      return time;
+    } else {
+      return new Date(Date.now()).toDateString().slice(4);
+    }
   }
 };

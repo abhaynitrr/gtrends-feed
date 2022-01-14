@@ -12,6 +12,7 @@ import {
 import feedutils from "../helpers/feed-utility";
 import Timeline from "../models/timeline";
 import TimelineV2 from "../models/timelineV2";
+import { Client } from "pg";
 
 class Router {
   static getRoutes() {
@@ -112,10 +113,13 @@ class Router {
               map[item[0]] = item[1];
               return map;
             }, {});
-            readXlsxFile(fs.createReadStream("./build/data/gtrends-data.xlsx"), {
-              sheet: dataSheet,
-              dateFormat: "yyyy-mm-dd"
-            })
+            readXlsxFile(
+              fs.createReadStream("./build/data/gtrends-data.xlsx"),
+              {
+                sheet: dataSheet,
+                dateFormat: "yyyy-mm-dd"
+              }
+            )
               .then(ROWS => {
                 try {
                   const bucketWiseData = {};
@@ -179,6 +183,105 @@ class Router {
           .catch(error => feedutils.sendErrorResponse(response, error.message));
       }
     );
+
+    router.get("/getdbdata", (request, response) => {
+      try {
+        // Create a client using the connection information provided on bit.io.
+        const client = new Client({
+          user: "ritvijparikh_demo_db_connection",
+          host: "db.bit.io",
+          database: "bitdotio",
+          password: "fPLA_etn6tkaDwnMaMwrvNeJyGT2",
+          port: 5432
+        });
+        client.connect();
+
+        client
+          .query('SELECT * FROM "ritvijparikh/test"."newscycle";')
+          .then(MAPPING => {
+            const CAT_MAP = MAPPING.rows.reduce((map = {}, item) => {
+              map[item["column_0"]] = item["column_1"];
+              return map;
+            }, {});
+
+            client.query(
+              'SELECT * FROM "ritvijparikh/test"."google_trends";',
+              (err, res) => {
+                if (err) {
+                  feedutils.sendErrorResponse(response, err.message);
+                }
+
+                try {
+                  const ROWS = res.rows;
+                  const bucketWiseData = {};
+
+                  for (let row = 0; row < ROWS.length; row++) {
+                    let mappedCat = CAT_MAP[ROWS[row].newscycle_code];
+                    if (typeof mappedCat === "string" && mappedCat !== "") {
+                      mappedCat = mappedCat.split(",");
+                      for (let c = 0; c < mappedCat.length; c++) {
+                        const MAP = mappedCat[c].trim();
+                        if (typeof MAP === "string" && MAP !== "") {
+                          if (
+                            !Object.hasOwnProperty.call(bucketWiseData, MAP)
+                          ) {
+                            bucketWiseData[MAP] = {};
+                          }
+                          if (
+                            !Object.hasOwnProperty.call(
+                              bucketWiseData[MAP],
+                              ROWS[row].date
+                            )
+                          ) {
+                            bucketWiseData[MAP][ROWS[row].date] = {};
+                          }
+
+                          bucketWiseData[MAP][ROWS[row].date][
+                            ROWS[row].newscycle_code
+                          ] =
+                            ROWS[row].value;
+                        }
+                      }
+                    }
+                  }
+
+                  const timelineData = {};
+                  for (const catgory in bucketWiseData) {
+                    if (Object.hasOwnProperty.call(bucketWiseData, catgory)) {
+                      if (!Object.hasOwnProperty.call(timelineData, catgory)) {
+                        timelineData[catgory] = [];
+                      }
+
+                      const categoryData = bucketWiseData[catgory];
+                      for (const date in categoryData) {
+                        if (Object.hasOwnProperty.call(categoryData, date)) {
+                          const element = categoryData[date];
+                          timelineData[catgory].push({
+                            time: feedutils.getFormattedTime(new Date(date)),
+                            ...element
+                          });
+                        }
+                      }
+                    }
+                  }
+                  client.end();
+                  response.status(SUCCESS_STATUS);
+                  response.type(JSON_RESPONSE_TYPE);
+                  response.set("Cache-Control", "public, max-age=86400");
+                  response.send({
+                    timelineData
+                  });
+                } catch (error) {
+                  feedutils.sendErrorResponse(response, error.message);
+                }
+              }
+            );
+          })
+          .catch(error => feedutils.sendErrorResponse(response, error.message));
+      } catch (error) {
+        feedutils.sendErrorResponse(response, error.message);
+      }
+    });
 
     return router;
   }
